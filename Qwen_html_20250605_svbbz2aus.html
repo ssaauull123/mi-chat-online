@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Simple Chat Multiusuario</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    #loginScreen,
+    #chatScreen {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+      width: 300px;
+    }
+    .hidden {
+      display: none;
+    }
+    #messages {
+      height: 200px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-bottom: 10px;
+      background: #fff;
+    }
+    input[type="text"] {
+      width: calc(100% - 70px);
+      padding: 5px;
+    }
+    button {
+      padding: 5px 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Pantalla de acceso -->
+  <div id="loginScreen">
+    <h2>Iniciar Sesión</h2>
+    <input type="password" id="accessCode" placeholder="Código de acceso"><br><br>
+    <button onclick="checkCode()">Entrar</button>
+    <p id="errorMsg" style="color:red;"></p>
+  </div>
+
+  <!-- Pantalla del chat -->
+  <div id="chatScreen" class="hidden">
+    <h2>Bienvenido, <span id="usernameDisplay"></span></h2>
+    <div id="messages"></div>
+    <input type="text" id="messageInput" placeholder="Escribe un mensaje...">
+    <button onclick="sendMessage()">Enviar</button>
+  </div>
+
+  <!-- Socket.IO -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const correctCode = "schat123";
+    const socket = io();
+
+    function checkCode() {
+      const code = document.getElementById("accessCode").value;
+      if (code === correctCode) {
+        let name = prompt("Introduce tu nombre para chatear:");
+        while (!name || name.trim() === "") {
+          name = prompt("Nombre inválido. Introduce tu nombre:");
+        }
+        document.getElementById("loginScreen").classList.add("hidden");
+        document.getElementById("chatScreen").classList.remove("hidden");
+        document.getElementById("usernameDisplay").textContent = name;
+        socket.emit('new user', name);
+      } else {
+        document.getElementById("errorMsg").textContent = "Código incorrecto.";
+      }
+    }
+
+    function sendMessage() {
+      const input = document.getElementById("messageInput");
+      const message = input.value.trim();
+      if (message !== "") {
+        socket.emit('chat message', message);
+        input.value = "";
+      }
+    }
+
+    socket.on('chat message', (msg) => {
+      const messagesDiv = document.getElementById("messages");
+      const msgElement = document.createElement("div");
+      msgElement.textContent = msg;
+      messagesDiv.appendChild(msgElement);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    });
+
+    // Enviar mensaje con Enter
+    document.getElementById("messageInput").addEventListener("keypress", function(e) {
+      if (e.key === "Enter") sendMessage();
+    });
+  </script>
+
+</body>
+</html>
